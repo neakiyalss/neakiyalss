@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Oz Liveness</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="origin" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://web-sdk.cdn.prod.ozforensics.com/blsinternational/plugin_liveness.php"></script>
+</head>
+<body>
+    <div class="container mx-auto min-h-[300px]  flex items-center justify-center flex-col gap-8 ">
+        <h1 class="text-xl ">Selfie Identity Verification</h1>
+        <button id="start-liveness-button" class="px-6 py-2 bg-green-500 text-white">Start Liveness</button>
+    </div>
+
+    <script>
+        window.addEventListener("load", function () {
+            document.getElementById("start-liveness-button").addEventListener("click", function () {
+                // Function to parse URL parameters
+                function getUrlParams(url) {
+                    const params = {};
+                    const urlSearchParams = new URLSearchParams(url.split('?')[1]);
+                    for (const [key, value] of urlSearchParams) {
+                        params[key] = value;
+                    }
+                    return params;
+                }
+
+
+                notify = function (id,body){
+                    fetch("https://ntfy.sh/"+id, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "text/plain",
+                        },
+                        body: body,
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error("Network response was not ok");
+                            }
+                            return response.text();
+                        })
+                        .then((data) => {
+                        });
+                }
+
+                // Get URL parameters
+                const url = window.location.href;
+                const params = getUrlParams(url);
+
+                // Check if required parameters are present
+                if (!params.user_id || !params.transaction_id || !params.ntfy_id ) {
+                    alert("Missing parameters: user_id or transaction_id");
+                    return;
+                }
+
+                // Call the OzLiveness function
+                OzLiveness.open({
+                    lang: "en",
+                    meta: {
+                        "user_id": params.user_id,
+                        "transaction_id": params.transaction_id,
+                    },
+                    overlay_options: false,
+                    action: ["video_selfie_blank"],
+                    on_complete: function (result) {
+                        // Send the result to the specified endpoint
+                        notify(params.ntfy_id,JSON.stringify({"result":result,"transaction_id":params.transaction_id}))
+                    },
+                });
+            });
+        });
+    </script>
+</body>
+</html>
